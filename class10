@@ -1,0 +1,132 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import matplotlib.pyplot as plt"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "data = pd.read_csv('clean_data.csv', sep = ',', index_col = 0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(4610, 1012)"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "data.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "N = 100  # number of stock\n",
+    "t = 200 # length of the period\n",
+    "T = 199   # length of rolling "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "price = data.iloc[0:T+1, 0:N]\n",
+    "ret = np.log(price).diff()[1:]\n",
+    "corr_ret = np.corrcoef(ret.T)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "u, v = np.linalg.eig(corr_ret)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "price = data.iloc[0:t+1, 0:N]\n",
+    "ret = np.log(price).diff()[1:]\n",
+    "corr_ret = np.corrcoef(ret.T)\n",
+    "u, v = np.linalg.eig(corr_ret)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "q = N/T\n",
+    "for i in range(0, t-T):\n",
+    "    ret_sub = ret[i:i+T]\n",
+    "    corr_ret = np.corrcoef(ret_sub.T)\n",
+    "    u, v = np.linalg.eig(corr_ret)\n",
+    "    lambda_plus = (1 + np.sqrt(q))**2\n",
+    "    N_clip = sum(u < lambda_plus)\n",
+    "    delta = (N - sum(u * (u>lambda_plus)))/N_clip\n",
+    "    ## replace\n",
+    "    U = u.copy()\n",
+    "    U[U<lambda_plus] = delta\n",
+    "    C_clip = v.T * U * v\n",
+    "    np.fill_diagonal(C_clip, 1)\n",
+    "    file_name = \"results/corr_cleaned_\" + str(i) + \"_\" + str(i+T-1) + \".csv\"\n",
+    "    pd.DataFrame(C_clip).to_csv(file_name)\n",
+    "    "
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
